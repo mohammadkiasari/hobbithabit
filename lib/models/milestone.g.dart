@@ -17,7 +17,7 @@ class MilestoneAdapter extends TypeAdapter<Milestone> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Milestone(
-      dayCount: fields[0] as int,
+      streakCount: fields[0] as int,
       prize: fields[1] as String,
     );
   }
@@ -27,7 +27,7 @@ class MilestoneAdapter extends TypeAdapter<Milestone> {
     writer
       ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.dayCount)
+      ..write(obj.streakCount)
       ..writeByte(1)
       ..write(obj.prize);
   }

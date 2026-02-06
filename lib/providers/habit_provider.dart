@@ -61,19 +61,19 @@ class HabitProvider extends ChangeNotifier {
     await updateHabit(updatedHabit);
   }
 
-  Future<void> removeMilestone(String habitId, int dayCount) async {
+  Future<void> removeMilestone(String habitId, int streakCount) async {
     final habit = _habitBox.get(habitId);
     if (habit == null) return;
 
     final milestones = List<Milestone>.from(habit.milestones)
-      ..removeWhere((m) => m.dayCount == dayCount);
+      ..removeWhere((m) => m.streakCount == streakCount);
     final updatedHabit = habit.copyWith(milestones: milestones);
     await updateHabit(updatedHabit);
   }
 
-  Milestone? getMilestoneForDay(Habit habit, int day) {
+  Milestone? getMilestoneForStreak(Habit habit, int streak) {
     for (final milestone in habit.milestones) {
-      if (milestone.dayCount == day) {
+      if (milestone.streakCount == streak) {
         return milestone;
       }
     }
@@ -82,5 +82,14 @@ class HabitProvider extends ChangeNotifier {
 
   bool isDayCompleted(Habit habit, int day) {
     return habit.completedDays.contains(day);
+  }
+
+  // Check if a milestone was just achieved with the current streak
+  bool checkMilestoneAchieved(Habit habit, int currentStreak, List<int> unlockedMilestones) {
+    final milestone = getMilestoneForStreak(habit, currentStreak);
+    if (milestone != null && !unlockedMilestones.contains(currentStreak)) {
+      return true;
+    }
+    return false;
   }
 }

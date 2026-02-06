@@ -23,6 +23,9 @@ class Habit {
   @HiveField(5)
   final DateTime createdAt;
 
+  @HiveField(6)
+  final List<int> unlockedMilestones;
+
   Habit({
     required this.id,
     required this.name,
@@ -30,7 +33,8 @@ class Habit {
     required this.milestones,
     required this.consequence,
     required this.createdAt,
-  });
+    List<int>? unlockedMilestones,
+  }) : unlockedMilestones = unlockedMilestones ?? [];
 
   Habit copyWith({
     String? id,
@@ -39,6 +43,7 @@ class Habit {
     List<Milestone>? milestones,
     String? consequence,
     DateTime? createdAt,
+    List<int>? unlockedMilestones,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -47,6 +52,7 @@ class Habit {
       milestones: milestones ?? this.milestones,
       consequence: consequence ?? this.consequence,
       createdAt: createdAt ?? this.createdAt,
+      unlockedMilestones: unlockedMilestones ?? this.unlockedMilestones,
     );
   }
 
@@ -77,6 +83,7 @@ class Habit {
         'milestones': milestones.map((m) => m.toJson()).toList(),
         'consequence': consequence,
         'createdAt': createdAt.toIso8601String(),
+        'unlockedMilestones': unlockedMilestones,
       };
 
   factory Habit.fromJson(Map<String, dynamic> json) => Habit(
@@ -88,5 +95,8 @@ class Habit {
             .toList(),
         consequence: json['consequence'] as String,
         createdAt: DateTime.parse(json['createdAt'] as String),
+        unlockedMilestones: json['unlockedMilestones'] != null
+            ? List<int>.from(json['unlockedMilestones'] as List)
+            : [],
       );
 }

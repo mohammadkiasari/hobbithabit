@@ -23,13 +23,14 @@ class HabitAdapter extends TypeAdapter<Habit> {
       milestones: (fields[3] as List).cast<Milestone>(),
       consequence: fields[4] as String,
       createdAt: fields[5] as DateTime,
+      unlockedMilestones: fields[6] != null ? (fields[6] as List).cast<int>() : [],
     );
   }
 
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..writeByte(4)
       ..write(obj.consequence)
       ..writeByte(5)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(6)
+      ..write(obj.unlockedMilestones);
   }
 
   @override

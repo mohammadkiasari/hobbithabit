@@ -5,23 +5,23 @@ part 'milestone.g.dart';
 @HiveType(typeId: 0)
 class Milestone {
   @HiveField(0)
-  final int dayCount;
+  final int streakCount;
 
   @HiveField(1)
   final String prize;
 
   Milestone({
-    required this.dayCount,
+    required this.streakCount,
     required this.prize,
   });
 
   Map<String, dynamic> toJson() => {
-        'dayCount': dayCount,
+        'streakCount': streakCount,
         'prize': prize,
       };
 
   factory Milestone.fromJson(Map<String, dynamic> json) => Milestone(
-        dayCount: json['dayCount'] as int,
+        streakCount: json['streakCount'] as int,
         prize: json['prize'] as String,
       );
 }

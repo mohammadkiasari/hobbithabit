@@ -40,7 +40,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 
   void _showMilestoneDialog() {
-    final dayController = TextEditingController();
+    final streakController = TextEditingController();
     final prizeController = TextEditingController();
 
     showDialog(
@@ -51,10 +51,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: dayController,
+              controller: streakController,
               decoration: const InputDecoration(
-                labelText: 'Day Number',
-                hintText: 'e.g., 50',
+                labelText: 'Streak Count',
+                hintText: 'e.g., 7 (for 7-day streak)',
               ),
               keyboardType: TextInputType.number,
             ),
@@ -75,10 +75,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              final day = int.tryParse(dayController.text);
+              final streak = int.tryParse(streakController.text);
               final prize = prizeController.text;
-              if (day != null && day > 0 && prize.isNotEmpty) {
-                final milestone = Milestone(dayCount: day, prize: prize);
+              if (streak != null && streak > 0 && prize.isNotEmpty) {
+                final milestone = Milestone(streakCount: streak, prize: prize);
                 Provider.of<HabitProvider>(context, listen: false)
                     .addMilestone(widget.habit.id, milestone);
                 Navigator.pop(context);
@@ -175,20 +175,19 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                   itemCount: habit.milestones.length,
                   itemBuilder: (context, index) {
                     final milestone = habit.milestones[index];
-                    final isCompleted =
-                        provider.isDayCompleted(habit, milestone.dayCount);
+                    final isUnlocked = habit.unlockedMilestones.contains(milestone.streakCount);
                     return ListTile(
                       leading: Icon(
-                        isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: isCompleted ? Colors.green : Colors.grey,
+                        isUnlocked ? Icons.check_circle : Icons.radio_button_unchecked,
+                        color: isUnlocked ? Colors.green : Colors.grey,
                       ),
                       title: Text(milestone.prize),
-                      subtitle: Text('Day ${milestone.dayCount}'),
+                      subtitle: Text('${milestone.streakCount}-day streak'),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           provider.removeMilestone(
-                              widget.habit.id, milestone.dayCount);
+                              widget.habit.id, milestone.streakCount);
                           Navigator.pop(context);
                         },
                       ),
@@ -279,6 +278,24 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return Consumer<HabitProvider>(
       builder: (context, provider, child) {
         final habit = provider.habits.firstWhere((h) => h.id == widget.habit.id);
+        
+        // Find next milestone
+        final currentStreak = habit.currentStreak;
+        Milestone? nextMilestone;
+        int? daysToNext;
+        
+        final sortedMilestones = List<Milestone>.from(habit.milestones)
+          ..sort((a, b) => a.streakCount.compareTo(b.streakCount));
+        
+        for (final milestone in sortedMilestones) {
+          if (milestone.streakCount > currentStreak && 
+              !habit.unlockedMilestones.contains(milestone.streakCount)) {
+            nextMilestone = milestone;
+            daysToNext = milestone.streakCount - currentStreak;
+            break;
+          }
+        }
+        
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(16),
@@ -287,24 +304,57 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.brown.shade300, width: 2),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: Column(
             children: [
-              _buildStatItem(
-                '🔥 Current Streak',
-                '${habit.currentStreak} days',
-                Colors.orange,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(
+                    '🔥 Current Streak',
+                    '${habit.currentStreak} days',
+                    Colors.orange,
+                  ),
+                  Container(
+                    width: 2,
+                    height: 40,
+                    color: Colors.brown.shade300,
+                  ),
+                  _buildStatItem(
+                    '⚔️ Total Days',
+                    '${habit.totalDaysConquered}',
+                    Colors.green,
+                  ),
+                ],
               ),
-              Container(
-                width: 2,
-                height: 40,
-                color: Colors.brown.shade300,
-              ),
-              _buildStatItem(
-                '⚔️ Total Days',
-                '${habit.totalDaysConquered}',
-                Colors.green,
-              ),
+              if (nextMilestone != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade700),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.emoji_events, color: Colors.amber.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Next: ${nextMilestone.prize} ($daysToNext days to go)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown.shade800,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -422,17 +472,29 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   Widget _buildDayCircle(int day, Habit habit, HabitProvider provider) {
     final isCompleted = provider.isDayCompleted(habit, day);
-    final milestone = provider.getMilestoneForDay(habit, day);
-    final hasMilestone = milestone != null;
 
     return GestureDetector(
       onTap: () async {
         final wasCompleted = isCompleted;
+        final oldStreak = habit.currentStreak;
+        
         await provider.toggleDay(habit.id, day);
         
-        // Check if this day has a milestone and was just completed (not uncompleted)
-        if (!wasCompleted && hasMilestone) {
-          _showMilestoneUnlockedDialog(milestone.prize);
+        // Get updated habit to check new streak
+        final updatedHabit = provider.habits.firstWhere((h) => h.id == habit.id);
+        final newStreak = updatedHabit.currentStreak;
+        
+        // Check if we just achieved a new milestone streak (completing a day)
+        if (!wasCompleted && newStreak > oldStreak) {
+          final milestone = provider.getMilestoneForStreak(updatedHabit, newStreak);
+          if (milestone != null && !updatedHabit.unlockedMilestones.contains(newStreak)) {
+            // Mark milestone as unlocked
+            final unlockedList = List<int>.from(updatedHabit.unlockedMilestones)..add(newStreak);
+            final habitWithUnlocked = updatedHabit.copyWith(unlockedMilestones: unlockedList);
+            await provider.updateHabit(habitWithUnlocked);
+            
+            _showMilestoneUnlockedDialog(milestone.prize);
+          }
         }
       },
       child: Container(
@@ -440,45 +502,23 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           shape: BoxShape.circle,
           color: isCompleted ? Colors.green.shade400 : Colors.brown.shade100,
           border: Border.all(
-            color: hasMilestone
-                ? Colors.amber.shade700
-                : Colors.brown.shade300,
-            width: hasMilestone ? 3 : 2,
+            color: Colors.brown.shade300,
+            width: 2,
           ),
-          boxShadow: hasMilestone
-              ? [
-                  BoxShadow(
-                    color: Colors.amber.shade300.withOpacity(0.5),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : null,
         ),
-        child: Stack(
-          children: [
-            Center(
-              child: Text(
-                '$day',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isCompleted ? Colors.white : Colors.brown.shade800,
-                ),
-              ),
+        child: Center(
+          child: Text(
+            '$day',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isCompleted ? Colors.white : Colors.brown.shade800,
             ),
-            if (hasMilestone && !isCompleted)
-              Positioned(
-                top: 2,
-                right: 2,
-                child: Icon(
-                  Icons.star,
-                  size: 12,
-                  color: Colors.amber.shade700,
-                ),
-              ),
-            if (isCompleted && hasMilestone)
-              Positioned(
+          ),
+        ),
+      ),
+    );
+  }
                 top: 2,
                 right: 2,
                 child: Icon(
