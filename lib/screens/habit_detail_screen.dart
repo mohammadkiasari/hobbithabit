@@ -527,7 +527,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 
   Widget _buildWeekRow(Habit habit, HabitProvider provider, DateTime weekStart) {
-    // Adjust weekStart to Monday
+    // Normalize weekStart to Monday of that week for consistent Mon-Sun display
     final mondayOffset = weekStart.weekday - 1;
     final monday = weekStart.subtract(Duration(days: mondayOffset));
     
@@ -562,7 +562,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
     final cellDate = DateTime(date.year, date.month, date.day);
-    final isToday = !isDisabled && cellDate.isAtSameMomentAs(todayDate);
+    final isToday = !isDisabled && cellDate == todayDate;
 
     return GestureDetector(
       onTap: isDisabled ? null : () async {

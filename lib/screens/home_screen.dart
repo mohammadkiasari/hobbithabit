@@ -243,10 +243,10 @@ class HomeScreen extends StatelessWidget {
             onPressed: () {
               final name = nameController.text.trim();
               final consequence = consequenceController.text.trim();
-              if (name.isNotEmpty && consequence.isNotEmpty) {
+              if (name.isNotEmpty) {
                 final updatedHabit = habit.copyWith(
                   name: name,
-                  consequence: consequence,
+                  consequence: consequence.isEmpty ? habit.consequence : consequence,
                 );
                 Provider.of<HabitProvider>(context, listen: false)
                     .updateHabit(updatedHabit);

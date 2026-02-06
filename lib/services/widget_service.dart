@@ -28,7 +28,10 @@ class WidgetService {
         final last7Days = <bool>[];
         for (int i = 6; i >= 0; i--) {
           final date = now.subtract(Duration(days: i));
-          final dayNumber = date.difference(habit.createdAt).inDays + 1;
+          // Use date-only comparison
+          final dateOnly = DateTime(date.year, date.month, date.day);
+          final habitStartOnly = DateTime(habit.createdAt.year, habit.createdAt.month, habit.createdAt.day);
+          final dayNumber = dateOnly.difference(habitStartOnly).inDays + 1;
           
           // Only include if day is after habit creation
           if (dayNumber > 0) {
