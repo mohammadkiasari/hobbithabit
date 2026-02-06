@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:home_widget/home_widget.dart';
 import '../models/habit.dart';
 
@@ -25,7 +26,7 @@ class WidgetService {
       
       for (var habit in habits) {
         // Get last 7 days status
-        final last7Days = <bool>[];
+        final last7Days = <int>[];
         for (int i = 6; i >= 0; i--) {
           final date = now.subtract(Duration(days: i));
           // Use date-only comparison
@@ -35,9 +36,9 @@ class WidgetService {
           
           // Only include if day is after habit creation
           if (dayNumber > 0) {
-            last7Days.add(habit.completedDays.contains(dayNumber));
+            last7Days.add(habit.completedDays.contains(dayNumber) ? 1 : 0);
           } else {
-            last7Days.add(false);
+            last7Days.add(0);
           }
         }
         
@@ -45,14 +46,12 @@ class WidgetService {
           'name': habit.name,
           'current_streak': habit.currentStreak,
           'total_days': habit.totalDaysConquered,
-          'last_7_days': last7Days.map((e) => e ? '1' : '0').join(','),
+          'last_7_days': last7Days,
         });
       }
 
-      // Convert to JSON string
-      final habitsJson = habitDataList.map((h) => 
-        '${h['name']}|${h['current_streak']}|${h['total_days']}|${h['last_7_days']}'
-      ).join(';;');
+      // Convert to JSON string for safe serialization
+      final habitsJson = jsonEncode(habitDataList);
 
       // Save data to widget
       await HomeWidget.saveWidgetData<int>('total_habits', habits.length);
