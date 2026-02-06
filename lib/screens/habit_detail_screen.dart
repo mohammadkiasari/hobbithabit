@@ -519,17 +519,4 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       ),
     );
   }
-                top: 2,
-                right: 2,
-                child: Icon(
-                  Icons.emoji_events,
-                  size: 12,
-                  color: Colors.amber.shade700,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }

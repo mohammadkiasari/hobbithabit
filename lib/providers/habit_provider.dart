@@ -83,13 +83,4 @@ class HabitProvider extends ChangeNotifier {
   bool isDayCompleted(Habit habit, int day) {
     return habit.completedDays.contains(day);
   }
-
-  // Check if a milestone was just achieved with the current streak
-  bool checkMilestoneAchieved(Habit habit, int currentStreak, List<int> unlockedMilestones) {
-    final milestone = getMilestoneForStreak(habit, currentStreak);
-    if (milestone != null && !unlockedMilestones.contains(currentStreak)) {
-      return true;
-    }
-    return false;
-  }
 }
