@@ -97,4 +97,15 @@ class HabitProvider extends ChangeNotifier {
   bool isDayCompleted(Habit habit, int day) {
     return habit.completedDays.contains(day);
   }
+
+  Future<void> resetHabit(String habitId) async {
+    final habit = _habitBox.get(habitId);
+    if (habit == null) return;
+
+    final updatedHabit = habit.copyWith(
+      completedDays: [],
+      unlockedMilestones: [],
+    );
+    await updateHabit(updatedHabit);
+  }
 }
