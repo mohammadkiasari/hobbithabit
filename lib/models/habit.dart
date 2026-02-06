@@ -54,13 +54,10 @@ class Habit {
     if (completedDays.isEmpty) return 0;
 
     final sortedDays = List<int>.from(completedDays)..sort();
+    final maxDay = sortedDays.last;
     int streak = 1;
-    int maxDay = sortedDays.last;
 
-    // Check if the last completed day is today or yesterday
-    final daysSinceCreation = DateTime.now().difference(createdAt).inDays + 1;
-    if (maxDay < daysSinceCreation - 1) return 0;
-
+    // Calculate backwards from the highest completed day
     for (int i = sortedDays.length - 2; i >= 0; i--) {
       if (sortedDays[i] == sortedDays[i + 1] - 1) {
         streak++;

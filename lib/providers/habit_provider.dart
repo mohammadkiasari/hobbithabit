@@ -72,11 +72,12 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Milestone? getMilestoneForDay(Habit habit, int day) {
-    try {
-      return habit.milestones.firstWhere((m) => m.dayCount == day);
-    } catch (e) {
-      return null;
+    for (final milestone in habit.milestones) {
+      if (milestone.dayCount == day) {
+        return milestone;
+      }
     }
+    return null;
   }
 
   bool isDayCompleted(Habit habit, int day) {

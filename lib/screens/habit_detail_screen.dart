@@ -371,49 +371,51 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return Column(
       children: List.generate(groups, (groupIndex) {
         final startDay = groupIndex * 30 + 1;
-        final endDay = ((groupIndex + 1) * 30).clamp(0, _displayedDays);
+        final endDay = (groupIndex + 1) * 30 <= _displayedDays 
+            ? (groupIndex + 1) * 30 
+            : _displayedDays;
         
-        return Column(
-          children: [
-            if (groupIndex > 0) const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.brown.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.brown.shade300, width: 2),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Days $startDay - $endDay',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.brown.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 1,
-                    ),
-                    itemCount: endDay - startDay + 1,
-                    itemBuilder: (context, index) {
-                      final day = startDay + index;
-                      return _buildDayCircle(day, habit, provider);
-                    },
-                  ),
-                ],
-              ),
+      return Column(
+        children: [
+          if (groupIndex > 0) const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.brown.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.brown.shade300, width: 2),
             ),
-          ],
-        );
+            child: Column(
+              children: [
+                Text(
+                  'Days $startDay - $endDay',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.brown.shade800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: endDay - startDay + 1,
+                  itemBuilder: (context, index) {
+                    final day = startDay + index;
+                    return _buildDayCircle(day, habit, provider);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
       }),
     );
   }
@@ -428,7 +430,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         final wasCompleted = isCompleted;
         await provider.toggleDay(habit.id, day);
         
-        // Check if this day has a milestone and was just completed
+        // Check if this day has a milestone and was just completed (not uncompleted)
         if (!wasCompleted && hasMilestone) {
           _showMilestoneUnlockedDialog(milestone.prize);
         }
