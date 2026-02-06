@@ -535,8 +535,15 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       children: List.generate(7, (index) {
         final date = monday.add(Duration(days: index));
         final dayNumber = _getDayNumberForDate(habit, date);
-        final isInFuture = date.isAfter(DateTime.now());
-        final isBeforeStart = date.isBefore(habit.createdAt);
+        
+        // Compare dates without time
+        final today = DateTime.now();
+        final todayDate = DateTime(today.year, today.month, today.day);
+        final cellDate = DateTime(date.year, date.month, date.day);
+        final habitStartDate = DateTime(habit.createdAt.year, habit.createdAt.month, habit.createdAt.day);
+        
+        final isInFuture = cellDate.isAfter(todayDate);
+        final isBeforeStart = cellDate.isBefore(habitStartDate);
         
         return Expanded(
           child: Padding(
@@ -550,10 +557,12 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   Widget _buildDayCell(int dayNumber, Habit habit, HabitProvider provider, DateTime date, bool isDisabled) {
     final isCompleted = !isDisabled && provider.isDayCompleted(habit, dayNumber);
-    final isToday = !isDisabled && 
-                    date.year == DateTime.now().year && 
-                    date.month == DateTime.now().month && 
-                    date.day == DateTime.now().day;
+    
+    // Compare dates without time
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final cellDate = DateTime(date.year, date.month, date.day);
+    final isToday = !isDisabled && cellDate.isAtSameMomentAs(todayDate);
 
     return GestureDetector(
       onTap: isDisabled ? null : () async {
