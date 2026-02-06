@@ -531,9 +531,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 
   Widget _buildWeekRow(Habit habit, HabitProvider provider, DateTime weekStart) {
-    // Normalize weekStart to Monday of that week for consistent Mon-Sun display
-    // DateTime.weekday: Mon=1, Tue=2, ..., Sun=7
-    // weekStart.weekday - 1 gives us: Mon=0, Tue=1, ..., Sun=6
+    // Calculate offset to get Monday of the week
+    // DateTime.weekday is Mon=1, Tue=2, ..., Sun=7
+    // So (weekday - 1) gives Mon=0, Tue=1, ..., Sun=6 as offset
     final mondayOffset = weekStart.weekday - 1;
     final monday = weekStart.subtract(Duration(days: mondayOffset));
     
