@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/habit.dart';
 import '../models/milestone.dart';
+import '../services/widget_service.dart';
 
 class HabitProvider extends ChangeNotifier {
   late Box<Habit> _habitBox;
@@ -15,6 +16,12 @@ class HabitProvider extends ChangeNotifier {
     Hive.registerAdapter(HabitAdapter());
     _habitBox = await Hive.openBox<Habit>('habits');
     _loadHabits();
+    
+    // Initialize widget service
+    await WidgetService.initialize();
+    await WidgetService.registerBackgroundCallback();
+    // Update widget with initial data
+    await _updateWidget();
   }
 
   void _loadHabits() {
@@ -22,19 +29,26 @@ class HabitProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _updateWidget() async {
+    await WidgetService.updateWidget(_habits);
+  }
+
   Future<void> addHabit(Habit habit) async {
     await _habitBox.put(habit.id, habit);
     _loadHabits();
+    await _updateWidget();
   }
 
   Future<void> updateHabit(Habit habit) async {
     await _habitBox.put(habit.id, habit);
     _loadHabits();
+    await _updateWidget();
   }
 
   Future<void> deleteHabit(String id) async {
     await _habitBox.delete(id);
     _loadHabits();
+    await _updateWidget();
   }
 
   Future<void> toggleDay(String habitId, int day) async {
