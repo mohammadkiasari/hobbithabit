@@ -7,32 +7,53 @@ class WidgetService {
   /// Update widget with habit data
   static Future<void> updateWidget(List<Habit> habits) async {
     try {
-      // Calculate totals
-      int totalHabits = habits.length;
-      int totalStreak = 0;
-      int totalDaysCompleted = 0;
-      String topHabitName = '';
-      int topHabitStreak = 0;
-
-      if (habits.isNotEmpty) {
-        // Find habit with highest streak
-        for (var habit in habits) {
-          totalStreak += habit.currentStreak;
-          totalDaysCompleted += habit.totalDaysConquered;
-          
-          if (habit.currentStreak > topHabitStreak) {
-            topHabitStreak = habit.currentStreak;
-            topHabitName = habit.name;
-          }
-        }
+      if (habits.isEmpty) {
+        // Clear widget data if no habits
+        await HomeWidget.saveWidgetData<int>('total_habits', 0);
+        await HomeWidget.saveWidgetData<String>('habits_data', '');
+        await HomeWidget.updateWidget(
+          name: _widgetName,
+          androidName: _widgetName,
+          iOSName: _widgetName,
+        );
+        return;
       }
 
+      // Prepare quest data with last 7 days status
+      final habitDataList = <Map<String, dynamic>>[];
+      final now = DateTime.now();
+      
+      for (var habit in habits) {
+        // Get last 7 days status
+        final last7Days = <bool>[];
+        for (int i = 6; i >= 0; i--) {
+          final date = now.subtract(Duration(days: i));
+          final dayNumber = date.difference(habit.createdAt).inDays + 1;
+          
+          // Only include if day is after habit creation
+          if (dayNumber > 0) {
+            last7Days.add(habit.completedDays.contains(dayNumber));
+          } else {
+            last7Days.add(false);
+          }
+        }
+        
+        habitDataList.add({
+          'name': habit.name,
+          'current_streak': habit.currentStreak,
+          'total_days': habit.totalDaysConquered,
+          'last_7_days': last7Days.map((e) => e ? '1' : '0').join(','),
+        });
+      }
+
+      // Convert to JSON string
+      final habitsJson = habitDataList.map((h) => 
+        '${h['name']}|${h['current_streak']}|${h['total_days']}|${h['last_7_days']}'
+      ).join(';;');
+
       // Save data to widget
-      await HomeWidget.saveWidgetData<int>('total_habits', totalHabits);
-      await HomeWidget.saveWidgetData<int>('total_streak', totalStreak);
-      await HomeWidget.saveWidgetData<int>('total_days', totalDaysCompleted);
-      await HomeWidget.saveWidgetData<String>('top_habit_name', topHabitName);
-      await HomeWidget.saveWidgetData<int>('top_habit_streak', topHabitStreak);
+      await HomeWidget.saveWidgetData<int>('total_habits', habits.length);
+      await HomeWidget.saveWidgetData<String>('habits_data', habitsJson);
       await HomeWidget.saveWidgetData<String>(
         'last_update',
         DateTime.now().toIso8601String(),

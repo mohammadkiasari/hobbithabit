@@ -205,6 +205,36 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
   }
 
+  void _showResetDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('⚠️ Reset Quest'),
+        content: const Text(
+          'Are you sure you want to reset this quest? This will clear all completed days and unlocked milestones. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Provider.of<HabitProvider>(context, listen: false)
+                  .resetHabit(widget.habit.id);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -258,6 +288,11 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                 color: Colors.brown.shade800,
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _showResetDialog,
+            tooltip: 'Reset Quest',
           ),
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -396,10 +431,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 16),
-                _buildDaysGrid(habit, provider),
+                _buildCalendarGrid(habit, provider),
                 const SizedBox(height: 16),
                 Text(
-                  'Scroll down to load more days...',
+                  'Scroll down to load more weeks...',
                   style: TextStyle(
                     color: Colors.brown.shade400,
                     fontStyle: FontStyle.italic,
@@ -414,71 +449,118 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
   }
 
-  Widget _buildDaysGrid(Habit habit, HabitProvider provider) {
-    // Group days by 30s for better readability
-    final groups = (_displayedDays / 30).ceil();
+  DateTime _getDateForDay(Habit habit, int dayNumber) {
+    return habit.createdAt.add(Duration(days: dayNumber - 1));
+  }
+
+  int _getDayNumberForDate(Habit habit, DateTime date) {
+    final difference = date.difference(habit.createdAt).inDays;
+    return difference + 1;
+  }
+
+  Widget _buildCalendarGrid(Habit habit, HabitProvider provider) {
+    // Calculate weeks to display based on _displayedDays
+    final weeksToDisplay = (_displayedDays / 7).ceil();
+    final startDate = habit.createdAt;
     
     return Column(
-      children: List.generate(groups, (groupIndex) {
-        final startDay = groupIndex * 30 + 1;
-        final endDay = (groupIndex + 1) * 30 <= _displayedDays 
-            ? (groupIndex + 1) * 30 
-            : _displayedDays;
+      children: List.generate(weeksToDisplay, (weekIndex) {
+        final weekStartDate = startDate.add(Duration(days: weekIndex * 7));
+        final weekEndDate = weekStartDate.add(const Duration(days: 6));
         
-      return Column(
-        children: [
-          if (groupIndex > 0) const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.brown.shade50,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.brown.shade300, width: 2),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'Days $startDay - $endDay',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.brown.shade800,
+        return Column(
+          children: [
+            if (weekIndex > 0) const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.brown.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.brown.shade300, width: 2),
+              ),
+              child: Column(
+                children: [
+                  // Week header
+                  Text(
+                    '${_formatDate(weekStartDate)} - ${_formatDate(weekEndDate)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.brown.shade800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 1,
+                  const SizedBox(height: 8),
+                  // Day names header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                        .map((day) => Expanded(
+                              child: Center(
+                                child: Text(
+                                  day,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.brown.shade600,
+                                  ),
+                                ),
+                              ),
+                            ))
+                        .toList(),
                   ),
-                  itemCount: endDay - startDay + 1,
-                  itemBuilder: (context, index) {
-                    final day = startDay + index;
-                    return _buildDayCircle(day, habit, provider);
-                  },
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  // Calendar week
+                  _buildWeekRow(habit, provider, weekStartDate),
+                ],
+              ),
             ),
-          ),
-        ],
-      );
+          ],
+        );
       }),
     );
   }
 
-  Widget _buildDayCircle(int day, Habit habit, HabitProvider provider) {
-    final isCompleted = provider.isDayCompleted(habit, day);
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  Widget _buildWeekRow(Habit habit, HabitProvider provider, DateTime weekStart) {
+    // Adjust weekStart to Monday
+    final mondayOffset = weekStart.weekday - 1;
+    final monday = weekStart.subtract(Duration(days: mondayOffset));
+    
+    return Row(
+      children: List.generate(7, (index) {
+        final date = monday.add(Duration(days: index));
+        final dayNumber = _getDayNumberForDate(habit, date);
+        final isInFuture = date.isAfter(DateTime.now());
+        final isBeforeStart = date.isBefore(habit.createdAt);
+        
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: _buildDayCell(dayNumber, habit, provider, date, isInFuture || isBeforeStart),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildDayCell(int dayNumber, Habit habit, HabitProvider provider, DateTime date, bool isDisabled) {
+    final isCompleted = !isDisabled && provider.isDayCompleted(habit, dayNumber);
+    final isToday = !isDisabled && 
+                    date.year == DateTime.now().year && 
+                    date.month == DateTime.now().month && 
+                    date.day == DateTime.now().day;
 
     return GestureDetector(
-      onTap: () async {
+      onTap: isDisabled ? null : () async {
         final wasCompleted = isCompleted;
         final oldStreak = habit.currentStreak;
         
-        await provider.toggleDay(habit.id, day);
+        await provider.toggleDay(habit.id, dayNumber);
         
         // Get updated habit to check new streak
         final updatedHabit = provider.habits.firstWhere((h) => h.id == habit.id);
@@ -498,21 +580,30 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         }
       },
       child: Container(
+        height: 50,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isCompleted ? Colors.green.shade400 : Colors.brown.shade100,
+          color: isDisabled 
+              ? Colors.grey.shade200
+              : isCompleted 
+                  ? Colors.green.shade400 
+                  : Colors.brown.shade100,
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.brown.shade300,
-            width: 2,
+            color: isToday ? Colors.amber.shade700 : Colors.brown.shade300,
+            width: isToday ? 3 : 1,
           ),
         ),
         child: Center(
           child: Text(
-            '$day',
+            '${date.day}',
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: isCompleted ? Colors.white : Colors.brown.shade800,
+              fontSize: 14,
+              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+              color: isDisabled
+                  ? Colors.grey.shade400
+                  : isCompleted 
+                      ? Colors.white 
+                      : Colors.brown.shade800,
             ),
           ),
         ),

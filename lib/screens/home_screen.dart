@@ -103,12 +103,12 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildHabitCard(BuildContext context, Habit habit) {
     return Card(
-      elevation: 4,
-      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
       color: Colors.brown.shade50,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.brown.shade300, width: 2),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.brown.shade200, width: 1),
       ),
       child: InkWell(
         onTap: () {
@@ -119,53 +119,85 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         },
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Icon(Icons.flag, color: Colors.brown.shade700),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
+              // Quest icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.brown.shade700,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.flag,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Quest details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       habit.name,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.brown.shade800,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '🔥 ${habit.currentStreak} days  •  ⚔️ ${habit.totalDaysConquered} total',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.brown.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Actions menu
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _showEditDialog(context, habit);
+                  } else if (value == 'delete') {
+                    _showDeleteDialog(context, habit);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 20),
+                        SizedBox(width: 8),
+                        Text('Edit Quest'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, size: 20, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Delete Quest', style: TextStyle(color: Colors.red)),
+                      ],
                     ),
                   ),
                 ],
+                icon: Icon(Icons.more_vert, color: Colors.brown.shade600),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatChip(
-                    '🔥 Current Streak',
-                    '${habit.currentStreak} days',
-                    Colors.orange.shade100,
-                  ),
-                  _buildStatChip(
-                    '⚔️ Conquered',
-                    '${habit.totalDaysConquered} days',
-                    Colors.green.shade100,
-                  ),
-                ],
-              ),
-              if (habit.milestones.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  '🏆 ${habit.milestones.length} milestone(s) set',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.brown.shade600,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -173,31 +205,85 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatChip(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.brown.shade200),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.brown.shade700,
+  void _showEditDialog(BuildContext context, Habit habit) {
+    final nameController = TextEditingController(text: habit.name);
+    final consequenceController = TextEditingController(text: habit.consequence);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('✏️ Edit Quest'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Quest Name',
+                border: OutlineInputBorder(),
+              ),
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: consequenceController,
+              decoration: const InputDecoration(
+                labelText: 'Consequence',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.brown.shade900,
+          ElevatedButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              final consequence = consequenceController.text.trim();
+              if (name.isNotEmpty && consequence.isNotEmpty) {
+                final updatedHabit = habit.copyWith(
+                  name: name,
+                  consequence: consequence,
+                );
+                Provider.of<HabitProvider>(context, listen: false)
+                    .updateHabit(updatedHabit);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, Habit habit) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('⚠️ Delete Quest'),
+        content: Text(
+          'Are you sure you want to delete "${habit.name}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Provider.of<HabitProvider>(context, listen: false)
+                  .deleteHabit(habit.id);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
+            child: const Text('Delete'),
           ),
         ],
       ),
