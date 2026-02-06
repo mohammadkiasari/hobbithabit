@@ -362,7 +362,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color) {
+  Widget _buildStatItem(String label, String value, MaterialColor color) {
     return Column(
       children: [
         Text(
