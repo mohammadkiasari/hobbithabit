@@ -458,6 +458,10 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return difference + 1;
   }
 
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
   Widget _buildCalendarGrid(Habit habit, HabitProvider provider) {
     // Calculate weeks to display based on _displayedDays
     final weeksToDisplay = (_displayedDays / 7).ceil();
@@ -528,7 +532,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   Widget _buildWeekRow(Habit habit, HabitProvider provider, DateTime weekStart) {
     // Normalize weekStart to Monday of that week for consistent Mon-Sun display
-    final mondayOffset = weekStart.weekday - 1;
+    // DateTime.weekday: Mon=1, Tue=2, ..., Sun=7
+    final mondayOffset = (weekStart.weekday - 1) % 7;
     final monday = weekStart.subtract(Duration(days: mondayOffset));
     
     return Row(
@@ -537,10 +542,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         final dayNumber = _getDayNumberForDate(habit, date);
         
         // Compare dates without time
-        final today = DateTime.now();
-        final todayDate = DateTime(today.year, today.month, today.day);
-        final cellDate = DateTime(date.year, date.month, date.day);
-        final habitStartDate = DateTime(habit.createdAt.year, habit.createdAt.month, habit.createdAt.day);
+        final todayDate = _normalizeDate(DateTime.now());
+        final cellDate = _normalizeDate(date);
+        final habitStartDate = _normalizeDate(habit.createdAt);
         
         final isInFuture = cellDate.isAfter(todayDate);
         final isBeforeStart = cellDate.isBefore(habitStartDate);
@@ -559,9 +563,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     final isCompleted = !isDisabled && provider.isDayCompleted(habit, dayNumber);
     
     // Compare dates without time
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-    final cellDate = DateTime(date.year, date.month, date.day);
+    final todayDate = _normalizeDate(DateTime.now());
+    final cellDate = _normalizeDate(date);
     final isToday = !isDisabled && cellDate == todayDate;
 
     return GestureDetector(
